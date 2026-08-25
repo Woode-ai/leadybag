@@ -13,6 +13,7 @@ interface User {
   name: string;
   email: string;
   role: "customer" | "admin";
+  emailVerified?: boolean; // هل فعّل بريده الإلكتروني؟ (اختياري احتياطاً لأي بيانات مستخدم قديمة مخزّنة محلياً قبل هذه الميزة)
 }
 
 interface AppContextType {
@@ -25,6 +26,7 @@ interface AppContextType {
   logout: () => void;
   cartCount: number;
   refreshCartCount: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -90,9 +92,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // يُستدعى بعد تفعيل البريد الإلكتروني (أو أي تغيير آخر في بيانات الحساب) لتحديث الحالة المحفوظة محلياً
+  // دون الحاجة لتسجيل خروج ودخول مرة أخرى
+  async function refreshUser() {
+    if (!token) return;
+    try {
+      const data = await apiClient("/auth/me");
+      const updatedUser: User = {
+        id: data.user._id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+        emailVerified: data.user.emailVerified,
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    } catch {
+      // إذا فشل (مثلاً التوكن منتهي)، لا نفعل شيئاً - المستخدم سيُعاد توجيهه لتسجيل الدخول لاحقاً بشكل طبيعي
+    }
+  }
+
   return (
     <AppContext.Provider
-      value={{ lang, toggleLang, t, user, token, login, logout, cartCount, refreshCartCount }}
+      value={{ lang, toggleLang, t, user, token, login, logout, cartCount, refreshCartCount, refreshUser }}
     >
       {children}
     </AppContext.Provider>

@@ -115,7 +115,13 @@ export async function POST(req: NextRequest) {
       status: "success",
       message: "تم تسجيل الدخول بنجاح",
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        emailVerified: user.emailVerified,
+      },
     });
   } catch (error: any) {
     return NextResponse.json(

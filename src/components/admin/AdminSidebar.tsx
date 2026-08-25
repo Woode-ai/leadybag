@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FolderTree, Package, ShoppingCart, Ticket, ShieldCheck, ArrowRight } from "lucide-react";
+import { LayoutDashboard, FolderTree, Package, ShoppingCart, Ticket, ShieldCheck, MessageCircle, ArrowRight } from "lucide-react";
 
 const links = [
   { href: "/admin", label: "الإحصائيات", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const links = [
   { href: "/admin/products", label: "المنتجات", icon: Package },
   { href: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
   { href: "/admin/coupons", label: "الكوبونات", icon: Ticket },
+  { href: "/admin/chats", label: "الدردشات المباشرة", icon: MessageCircle },
   { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
 ];
 

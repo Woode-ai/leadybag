@@ -19,6 +19,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // السبب الأشهر لفشل رفع الصور هو نسيان تعبئة بيانات Cloudinary في .env.local
+    // نتحقق من هذا صراحة أولاً ونعطي رسالة واضحة، بدل رسالة Cloudinary التقنية المبهمة
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message:
+            "رفع الصور غير مُفعَّل بعد - أضف CLOUDINARY_CLOUD_NAME و CLOUDINARY_API_KEY و CLOUDINARY_API_SECRET في ملف .env.local (احصل عليها من لوحة تحكم Cloudinary)، ثم أعد تشغيل السيرفر",
+        },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -33,6 +50,15 @@ export async function POST(req: NextRequest) {
     if (!file.type.startsWith("image/")) {
       return NextResponse.json(
         { status: "error", message: "الملف المرفوع يجب أن يكون صورة" },
+        { status: 400 }
+      );
+    }
+
+    // حد أقصى 5 ميجابايت للصورة الواحدة - يمنع رفع ملفات ضخمة عن طريق الخطأ تُبطئ الموقع
+    const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      return NextResponse.json(
+        { status: "error", message: "حجم الصورة كبير جداً - الحد الأقصى 5 ميجابايت" },
         { status: 400 }
       );
     }

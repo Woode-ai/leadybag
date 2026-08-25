@@ -10,8 +10,9 @@ import { connectDB } from "@/lib/db";
 import ChatMessage from "@/models/ChatMessage";
 import { getCurrentUser } from "@/lib/auth";
 
-export async function GET(req: NextRequest, { params }: { params: { roomId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ roomId: string }> }) {
   try {
+    const { roomId } = await params; // Next.js 15: params أصبحت Promise ويجب انتظارها قبل استخدامها
     const currentUser = getCurrentUser(req);
     if (!currentUser) {
       return NextResponse.json(
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     }
 
     await connectDB();
-    const messages = await ChatMessage.find({ roomId: params.roomId }).sort({ createdAt: 1 });
+    const messages = await ChatMessage.find({ roomId }).sort({ createdAt: 1 });
 
     return NextResponse.json({ status: "success", messages });
   } catch (error: any) {
@@ -32,8 +33,9 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ roomId: string }> }) {
   try {
+    const { roomId } = await params; // Next.js 15: params أصبحت Promise ويجب انتظارها قبل استخدامها
     const currentUser = getCurrentUser(req);
     if (!currentUser) {
       return NextResponse.json(
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     }
 
     const chatMessage = await ChatMessage.create({
-      roomId: params.roomId,
+      roomId,
       senderId: currentUser.userId,
       senderRole: currentUser.role,
       message: message.trim(),

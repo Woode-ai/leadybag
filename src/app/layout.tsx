@@ -7,6 +7,7 @@ import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ChatWidget from "@/components/ChatWidget";
 
 export const metadata: Metadata = {
   title: "leadybag",
@@ -25,6 +26,7 @@ export default function RootLayout({
           <Header />
           <div className="min-h-[70vh]">{children}</div>
           <Footer />
+          <ChatWidget />
         </AppProvider>
       </body>
     </html>

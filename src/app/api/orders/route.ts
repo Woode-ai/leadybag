@@ -8,8 +8,10 @@ import Cart from "@/models/Cart";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Coupon from "@/models/Coupon";
+import User from "@/models/User";
 import { getCurrentUser } from "@/lib/auth";
 import { createOrderSchema } from "@/lib/validation";
+import { sendOrderConfirmationEmail } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -106,6 +108,16 @@ export async function POST(req: NextRequest) {
     cart.items = [];
     cart.couponCode = undefined;
     await cart.save();
+
+    // 8. إرسال بريد تأكيد الطلب - لا نجعل فشل الإرسال يفشل عملية الطلب نفسها
+    try {
+      const buyer = await User.findById(currentUser.userId);
+      if (buyer) {
+        await sendOrderConfirmationEmail(buyer.email, buyer.name, order.trackingNumber!, order.total);
+      }
+    } catch (emailError) {
+      console.error("⚠️ تعذّر إرسال بريد تأكيد الطلب، لكن الطلب نفسه تم بنجاح:", emailError);
+    }
 
     return NextResponse.json(
       { status: "success", message: "تم إنشاء الطلب بنجاح", order },

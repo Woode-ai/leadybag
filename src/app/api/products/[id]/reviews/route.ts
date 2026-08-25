@@ -9,8 +9,9 @@ import Product from "@/models/Product";
 import { getCurrentUser } from "@/lib/auth";
 import { ratingSchema } from "@/lib/validation";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params; // Next.js 15: params أصبحت Promise ويجب انتظارها قبل استخدامها
     const currentUser = getCurrentUser(req);
     if (!currentUser) {
       return NextResponse.json(
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       );
     }
 
-    const product = await Product.findById(params.id);
+    const product = await Product.findById(id);
     if (!product) {
       return NextResponse.json({ status: "error", message: "المنتج غير موجود" }, { status: 404 });
     }

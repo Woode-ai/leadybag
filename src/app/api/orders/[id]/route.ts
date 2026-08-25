@@ -7,7 +7,7 @@ import { connectDB } from "@/lib/db";
 import Order from "@/models/Order";
 import { getCurrentUser, requireAdmin } from "@/lib/auth";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const currentUser = getCurrentUser(req);
     if (!currentUser) {
@@ -17,8 +17,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
+    const { id } = await params; // Next.js 15: params أصبحت Promise ويجب انتظارها قبل استخدامها
     await connectDB();
-    const order = await Order.findById(params.id).populate("items.productId", "name images");
+    const order = await Order.findById(id).populate("items.productId", "name images");
 
     if (!order) {
       return NextResponse.json({ status: "error", message: "الطلب غير موجود" }, { status: 404 });
@@ -41,8 +42,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params; // Next.js 15: params أصبحت Promise ويجب انتظارها قبل استخدامها
     const admin = requireAdmin(req);
     if (!admin) {
       return NextResponse.json(
@@ -68,7 +70,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
     if (trackingNumber) updateData.trackingNumber = trackingNumber;
 
-    const order = await Order.findByIdAndUpdate(params.id, updateData, { new: true });
+    const order = await Order.findByIdAndUpdate(id, updateData, { new: true });
     if (!order) {
       return NextResponse.json({ status: "error", message: "الطلب غير موجود" }, { status: 404 });
     }

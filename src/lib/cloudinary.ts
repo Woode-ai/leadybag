@@ -11,4 +11,16 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// دالة تتحقق أن الحساب مُعدّ فعلاً قبل محاولة الرفع
+// السبب: أكثر سبب شائع لفشل رفع الصور هو عدم تعبئة هذه المتغيرات الثلاثة في .env.local
+// وبدون هذا التحقق، تظهر رسالة خطأ غامضة من مكتبة Cloudinary نفسها بدل رسالة واضحة تشرح المشكلة
+export function isCloudinaryConfigured(): boolean {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+  );
+}
+
 export default cloudinary;
+

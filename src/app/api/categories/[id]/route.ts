@@ -10,10 +10,11 @@ import { requireAdmin } from "@/lib/auth";
 import { categorySchema } from "@/lib/validation";
 import { bumpCacheVersion } from "@/lib/redis";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     await connectDB();
-    const category = await Category.findById(params.id);
+    const category = await Category.findById(id);
     if (!category) {
       return NextResponse.json({ status: "error", message: "القسم غير موجود" }, { status: 404 });
     }
@@ -26,8 +27,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const admin = requireAdmin(req);
     if (!admin) {
       return NextResponse.json(
@@ -48,7 +50,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
-    const category = await Category.findByIdAndUpdate(params.id, parsed.data, { new: true });
+    const category = await Category.findByIdAndUpdate(id, parsed.data, { new: true });
     if (!category) {
       return NextResponse.json({ status: "error", message: "القسم غير موجود" }, { status: 404 });
     }
@@ -64,8 +66,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const admin = requireAdmin(req);
     if (!admin) {
       return NextResponse.json(
@@ -75,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     await connectDB();
-    const category = await Category.findByIdAndDelete(params.id);
+    const category = await Category.findByIdAndDelete(id);
     if (!category) {
       return NextResponse.json({ status: "error", message: "القسم غير موجود" }, { status: 404 });
     }

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import { apiClient } from "@/lib/apiClient";
-import { Settings } from "lucide-react";
+import { Settings, MailWarning } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   pending: "قيد الانتظار",
@@ -19,6 +19,8 @@ export default function AccountPage() {
   const { t, user } = useApp();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -27,6 +29,19 @@ export default function AccountPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [user]);
+
+  async function handleResendVerification() {
+    setResending(true);
+    setResendMessage("");
+    try {
+      const data = await apiClient("/auth/resend-verification", { method: "POST" });
+      setResendMessage(data.message);
+    } catch (err: any) {
+      setResendMessage(err.message);
+    } finally {
+      setResending(false);
+    }
+  }
 
   if (!user) {
     return (
@@ -40,6 +55,29 @@ export default function AccountPage() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
+      {/* تنبيه تفعيل البريد الإلكتروني - يظهر فقط إذا لم يفعّله المستخدم بعد */}
+      {user.emailVerified === false && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <MailWarning className="text-yellow-600 shrink-0 mt-0.5" size={20} />
+          <div className="flex-1">
+            <p className="text-sm text-yellow-800 font-medium">
+              لم تُفعِّل بريدك الإلكتروني بعد
+            </p>
+            <p className="text-xs text-yellow-700 mt-1">
+              تحقق من بريدك ({user.email}) واضغط رابط التفعيل. لم يصلك؟
+            </p>
+            <button
+              onClick={handleResendVerification}
+              disabled={resending}
+              className="text-xs text-primary font-medium underline mt-2 disabled:opacity-50"
+            >
+              {resending ? "جاري الإرسال..." : "إعادة إرسال رابط التفعيل"}
+            </button>
+            {resendMessage && <p className="text-xs text-gray-600 mt-1">{resendMessage}</p>}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-secondary">{user.name}</h1>
