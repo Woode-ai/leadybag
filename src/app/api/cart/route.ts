@@ -1,7 +1,7 @@
 // src/app/api/cart/route.ts
-// GET   /api/cart  → عرض سلة المستخدم الحالي (مع تفاصيل كل منتج)
-// POST  /api/cart  → إضافة منتج للسلة (أو زيادة كميته إذا كان موجوداً بالفعل)
-// PUT   /api/cart  → تحديث كمية منتج معين في السلة
+// GET    /api/cart   → عرض سلة المستخدم الحالي (مع تفاصيل كل منتج)
+// POST   /api/cart   → إضافة منتج للسلة (أو زيادة كميته إذا كان موجوداً بالفعل)
+// PUT    /api/cart   → تحديث كمية منتج معين في السلة
 // DELETE /api/cart?productId=xxx → حذف منتج من السلة
 
 import { NextRequest, NextResponse } from "next/server";
@@ -26,7 +26,6 @@ export async function GET(req: NextRequest) {
       "name price discountPrice images stock"
     );
 
-    // إذا لم يكن للمستخدم سلة بعد، ننشئ له واحدة فارغة تلقائياً
     if (!cart) {
       cart = await Cart.create({ userId: currentUser.userId, items: [] });
     }
@@ -67,8 +66,7 @@ export async function POST(req: NextRequest) {
       cart = new Cart({ userId: currentUser.userId, items: [] });
     }
 
-    // إذا كان المنتج موجوداً بالفعل في السلة، نزيد كميته بدلاً من تكراره
-    const existingItem = cart.items.find((item) => item.productId.toString() === productId);
+    const existingItem = cart.items.find((item: any) => item.productId.toString() === productId);
     if (existingItem) {
       existingItem.quantity += quantity;
     } else {
@@ -113,7 +111,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ status: "error", message: "السلة غير موجودة" }, { status: 404 });
     }
 
-    const item = cart.items.find((i) => i.productId.toString() === productId);
+    const item = cart.items.find((item: any) => item.productId.toString() === productId);
     if (!item) {
       return NextResponse.json(
         { status: "error", message: "هذا المنتج غير موجود في السلة" },
@@ -159,8 +157,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ status: "error", message: "السلة غير موجودة" }, { status: 404 });
     }
 
-    cart.items = cart.items.filter((i) => i.productId.toString() !== productId);
+    cart.items = cart.items.filter((item: any) => item.productId.toString() !== productId);
     await cart.save();
+    await cart.populate("items.productId", "name price discountPrice images stock");
 
     return NextResponse.json({ status: "success", message: "تم حذف المنتج من السلة", cart });
   } catch (error: any) {
