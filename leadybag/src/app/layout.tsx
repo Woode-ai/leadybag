@@ -1,9 +1,13 @@
 // src/app/layout.tsx
-// هذا الملف "يلف" كل صفحات الموقع - أي شيء تضعه هنا يظهر في كل صفحة
-// حالياً بسيط جداً، سنضيف له الهيدر والفوتر في المرحلة 4 (الواجهات الأمامية)
+// الآن الـ Layout يضم: AppProvider (اللغة + المستخدم)، Header، Footer
+// وهذا يظهر في كل صفحات الموقع بدون تكرار الكود
 
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppProvider } from "@/context/AppContext";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import ChatWidget from "@/components/ChatWidget";
 
 export const metadata: Metadata = {
   title: "leadybag",
@@ -16,8 +20,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl">
-      <body>{children}</body>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body>
+        <AppProvider>
+          <Header />
+          <div className="min-h-[70vh]">{children}</div>
+          <Footer />
+          <ChatWidget />
+        </AppProvider>
+      </body>
     </html>
   );
 }

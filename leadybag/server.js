@@ -10,8 +10,16 @@ const next = require("next");
 require("dotenv").config({ path: ".env.local" });
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = 3000;
+
+// في التطوير المحلي: نستخدم localhost والمنفذ 3000 دائماً
+// في الإنتاج (بعد النشر على Railway/Render/أي منصة): هذه المنصات تحدد المنفذ تلقائياً
+// عبر متغير بيئة PORT، ويجب الربط بـ 0.0.0.0 (وليس localhost) ليكون السيرفر قابلاً للوصول من الخارج
+const hostname = dev ? "localhost" : "0.0.0.0";
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+// دومين الموقع الحقيقي بعد النشر - يُستخدم لتقييد الدردشة المباشرة على دومينك فقط بدلاً من "*"
+// في التطوير المحلي، نتركه "*" لأنه أسهل للاختبار (لا يوجد دومين حقيقي بعد)
+const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -21,9 +29,9 @@ app.prepare().then(() => {
     handle(req, res);
   });
 
-  // نُنشئ سيرفر Socket.io فوق نفس السيرفر (نفس المنفذ 3000)
+  // نُنشئ سيرفر Socket.io فوق نفس السيرفر (نفس المنفذ)
   const io = new Server(httpServer, {
-    cors: { origin: "*" }, // في الإنتاج، يُفضّل تحديد الدومين الحقيقي بدلاً من "*"
+    cors: { origin: allowedOrigin },
   });
 
   io.on("connection", (socket) => {
@@ -49,7 +57,7 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(port, () => {
+  httpServer.listen(port, hostname, () => {
     console.log(`✅ السيرفر يعمل على http://${hostname}:${port}`);
     console.log("💬 نظام الدردشة المباشرة (Socket.io) جاهز");
   });

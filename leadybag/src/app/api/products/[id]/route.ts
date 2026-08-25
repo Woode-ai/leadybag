@@ -8,6 +8,7 @@ import { connectDB } from "@/lib/db";
 import Product from "@/models/Product";
 import { requireAdmin } from "@/lib/auth";
 import { productSchema } from "@/lib/validation";
+import { bumpCacheVersion } from "@/lib/redis";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -61,6 +62,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ status: "error", message: "المنتج غير موجود" }, { status: 404 });
     }
 
+    await bumpCacheVersion("products"); // نلغي الكاش القديم حتى لا تظهر البيانات القديمة للعملاء
+
     return NextResponse.json({ status: "success", message: "تم تعديل المنتج بنجاح", product });
   } catch (error: any) {
     return NextResponse.json(
@@ -85,6 +88,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!product) {
       return NextResponse.json({ status: "error", message: "المنتج غير موجود" }, { status: 404 });
     }
+
+    await bumpCacheVersion("products");
 
     return NextResponse.json({ status: "success", message: "تم حذف المنتج بنجاح" });
   } catch (error: any) {

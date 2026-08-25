@@ -13,6 +13,13 @@ export interface IUser {
   phone?: string;
   address?: string;
   wishlist: mongoose.Types.ObjectId[]; // قائمة أمنيات المستخدم (روابط لمنتجات)
+  twoFactorSecret?: string; // السر الخاص بتوليد أكواد المصادقة الثنائية (2FA) - مشفّر ضمنياً بعدم إظهاره أبداً للواجهة
+  twoFactorEnabled: boolean; // هل فعّل هذا المستخدم (الأدمن عادة) المصادقة الثنائية؟
+  failedLoginAttempts: number; // عدد محاولات الدخول الفاشلة المتتالية (لحماية إضافية من التخمين)
+  lockUntil?: Date; // إذا تجاوز محاولات فاشلة كثيرة، يُقفل الحساب مؤقتاً حتى هذا الوقت
+  emailVerified: boolean; // هل أكّد المستخدم بريده الإلكتروني عبر الرابط المُرسَل له؟
+  emailVerificationToken?: string; // رمز عشوائي مؤقت يُرسَل ضمن رابط التفعيل
+  emailVerificationExpires?: Date; // صلاحية رمز التفعيل (24 ساعة) - بعدها لا يعمل الرابط القديم
   createdAt: Date;
 }
 
@@ -25,6 +32,13 @@ const UserSchema = new Schema<IUser>(
     phone: { type: String },
     address: { type: String },
     wishlist: [{ type: Schema.Types.ObjectId, ref: "Product" }],
+    twoFactorSecret: { type: String, select: false }, // select: false = لا يُرجَع تلقائياً في أي استعلام عادي
+    twoFactorEnabled: { type: Boolean, default: false },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String, select: false },
+    emailVerificationExpires: { type: Date, select: false },
   },
   { timestamps: true } // يضيف تلقائياً createdAt و updatedAt
 );

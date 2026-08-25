@@ -8,6 +8,7 @@ import { connectDB } from "@/lib/db";
 import Category from "@/models/Category";
 import { requireAdmin } from "@/lib/auth";
 import { categorySchema } from "@/lib/validation";
+import { bumpCacheVersion } from "@/lib/redis";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -52,6 +53,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ status: "error", message: "القسم غير موجود" }, { status: 404 });
     }
 
+    await bumpCacheVersion("categories");
+
     return NextResponse.json({ status: "success", message: "تم تعديل القسم بنجاح", category });
   } catch (error: any) {
     return NextResponse.json(
@@ -76,6 +79,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!category) {
       return NextResponse.json({ status: "error", message: "القسم غير موجود" }, { status: 404 });
     }
+
+    await bumpCacheVersion("categories");
 
     return NextResponse.json({ status: "success", message: "تم حذف القسم بنجاح" });
   } catch (error: any) {

@@ -15,11 +15,24 @@ import { connectDB } from "@/lib/db";
 import Product from "@/models/Product";
 import { requireAdmin } from "@/lib/auth";
 import { productSchema } from "@/lib/validation";
+import { escapeRegex } from "@/lib/sanitize";
+import { getCached, setCached, getCacheVersion, bumpCacheVersion } from "@/lib/redis";
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
     const { searchParams } = new URL(req.url);
+
+    // مفتاح الكاش يشمل كل معايير البحث/الفلترة + رقم الإصدار الحالي
+    // بهذا، كل تركيبة فلاتر مختلفة (سعر/قسم/بحث..) لها كاش منفصل تلقائياً
+    const version = await getCacheVersion("products");
+    const cacheKey = `products:v${version}:${searchParams.toString()}`;
+
+    const cached = await getCached<any>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ ...cached, _cached: true });
+    }
+
+    await connectDB();
 
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "12");
@@ -46,10 +59,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      // البحث في اسم المنتج بالعربية أو الإنجليزية (غير حساس لحالة الأحرف)
+      // نهرّب الأحرف الخاصة أولاً لمنع هجمات ReDoS، ثم نبحث في اسم المنتج بالعربية أو الإنجليزية
+      const safeSearch = escapeRegex(search);
       filter.$or = [
-        { "name.ar": { $regex: search, $options: "i" } },
-        { "name.en": { $regex: search, $options: "i" } },
+        { "name.ar": { $regex: safeSearch, $options: "i" } },
+        { "name.en": { $regex: safeSearch, $options: "i" } },
       ];
     }
 
@@ -77,7 +91,7 @@ export async function GET(req: NextRequest) {
 
     const total = await Product.countDocuments(filter);
 
-    return NextResponse.json({
+    const responseBody = {
       status: "success",
       products,
       pagination: {
@@ -86,7 +100,12 @@ export async function GET(req: NextRequest) {
         limit,
         totalPages: Math.ceil(total / limit),
       },
-    });
+    };
+
+    // نخزّن النتيجة لمدة 60 ثانية فقط - وقت كافٍ لتخفيف الضغط، وقصير كفاية حتى لا تظهر بيانات قديمة طويلاً
+    await setCached(cacheKey, responseBody, 60);
+
+    return NextResponse.json(responseBody);
   } catch (error: any) {
     return NextResponse.json(
       { status: "error", message: "حدث خطأ في السيرفر", error: error.message },
@@ -117,6 +136,10 @@ export async function POST(req: NextRequest) {
     }
 
     const product = await Product.create({ ...parsed.data, ratings: [] });
+
+    // نلغي كل كاش المنتجات القديم فوراً - وإلا سيرى العملاء بيانات قديمة لا تشمل هذا المنتج الجديد لمدة دقيقة
+    await bumpCacheVersion("products");
+
     return NextResponse.json(
       { status: "success", message: "تم إضافة المنتج بنجاح", product },
       { status: 201 }
